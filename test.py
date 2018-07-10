@@ -10,8 +10,8 @@ def main():
         input_signal = [float(x) for x in values]
     result = detection.detect(input_signal, 2000)
     pp.plot(input_signal)
-    result = [x / 35.0 for x in result]
-    pp.plot(result)
+    for x in result:
+        pp.axvline(x, color="r")
     pp.show()
 
 if __name__ == '__main__':
