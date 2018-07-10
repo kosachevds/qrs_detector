@@ -63,6 +63,7 @@ def _window_integration(signal, window_size):
     return result
 
 
+# TODO: remade
 def _thresholding(signal, filtered, integrated, rate):
     peaki = integrated[0]
     spki = 0
@@ -71,11 +72,11 @@ def _thresholding(signal, filtered, integrated, rate):
     threshold1 = spki
     for i in range(1, len(integrated)):
         peaki = max(peaki, integrated[i])
-        xn = (signal[i] - filtered[i])
-        npki = (npki * (i - 1) + xn) / i
+        noise = (signal[i] - filtered[i])
+        npki = (npki * (i - 1) + noise) / i
+        npki = 0.875 * npki + 0.125 * peaki
         spki = (spki * (i - 1) + integrated[i]) / i
         spki = 0.875 * spki + 0.125 * peaki
-        npki = 0.875 * npki + 0.125 * peaki
 
         threshold1 = npki + 0.25 * (spki - npki)
         threshold2 = 0.5 * threshold1
@@ -84,27 +85,28 @@ def _thresholding(signal, filtered, integrated, rate):
             if peaks[-1] + _WINDOW_SEC * rate < i:
                 peaks.append(i)
 
-    peaks2 = np.array(peaks)
-    avg = np.average(np.diff(peaks))
+    # peaks2 = np.array(peaks)
+    # avg = np.average(np.diff(peaks))
 
-    for i in range(1, len(peaks)):
-        peakf = integrated[i - 1]
-        spkf = 0
-        npkf = 0
+    # for i in range(1, len(peaks)):
+    #     peakf = integrated[i - 1]
+    #     spkf = 0
+    #     npkf = 0
 
-        if peaks[i] - peaks[i - 1] >= 1.66 * avg:
-            for j in range(int(peaks[i - 1]) + 1, int(peaks[i])):
-                peakf = max(integrated[j], peakf)
-                xn = (signal[i] - filtered[j])
-                npkf = (npkf * (j - 1) + xn) / j
-                npkf = 0.125 * peakf + 0.875 * npkf
-                spkf = (spkf * (j - 1) + integrated[j]) / j
-                spkf = 0.125 * peakf + 0.875 * spkf
+    #     if peaks[i] - peaks[i - 1] >= 1.66 * avg:
+    #         for j in range(int(peaks[i - 1]) + 1, int(peaks[i])):
+    #             peakf = max(integrated[j], peakf)
+    #             xn = (signal[i] - filtered[j])
+    #             npkf = (npkf * (j - 1) + xn) / j
+    #             npkf = 0.125 * peakf + 0.875 * npkf
+    #             spkf = (spkf * (j - 1) + integrated[j]) / j
+    #             spkf = 0.125 * peakf + 0.875 * spkf
 
-                thresholdf1 = npkf + 0.25 * (spkf - npkf)
-                thresholdf2 = 0.5 * thresholdf1
-                if integrated[j] >= thresholdf2:
-                    if peaks2[-1] < j:
-                        peaks2.append(j)
+    #             thresholdf1 = npkf + 0.25 * (spkf - npkf)
+    #             thresholdf2 = 0.5 * thresholdf1
+    #             if integrated[j] >= thresholdf2:
+    #                 if peaks2[-1] < j:
+    #                     peaks2.append(j)
 
-    return peaks2
+    # return peaks2
+    return peaks
