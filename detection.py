@@ -5,6 +5,7 @@ def detect(signal, rate):
     signal = _window_integration(signal, int(0.15 * rate))
     return signal
 
+
 def _low_pass_filter(signal):
     result = []
     for index, value in enumerate(signal):
@@ -19,6 +20,7 @@ def _low_pass_filter(signal):
         result.append(value)
     return result
 
+
 def _high_pass_filter(signal):
     result = []
     for index, value in enumerate(signal):
@@ -32,14 +34,16 @@ def _high_pass_filter(signal):
         result.append(value)
     return result
 
+
 def _squared_derivative(signal):
     result = []
     for index in range(2, len(signal) - 2):
-        value = (  signal[index + 2] + 2 * signal[index + 1]
-                    - signal[index - 2] - 2 * signal[index - 1])
+        value = (signal[index + 2] + 2 * signal[index + 1] -
+                 signal[index - 2] - 2 * signal[index - 1])
         value /= 8.0
         result.append(value * value)
     return result
+
 
 def _window_integration(signal, window_size):
     result = []
