@@ -5,11 +5,10 @@ _MIN_RR = 0.2
 
 
 def detect(signal, rate):
-    filtered = _low_pass_filter(signal)  # x1
-    filtered = _high_pass_filter(filtered)  # x2
-    # x4, x3 - is not squared derivative
+    filtered = _low_pass_filter(signal)
+    filtered = _high_pass_filter(filtered)
     integrated = _squared_derivative(filtered)
-    integrated = _window_integration(integrated, int(_WINDOW_SEC * rate))  # x5
+    integrated = _window_integration(integrated, int(_WINDOW_SEC * rate))
     return _thresholding(signal, filtered, integrated, rate)
 
 
@@ -64,7 +63,6 @@ def _window_integration(signal, window_size):
     return result
 
 
-# TODO: remade
 def _thresholding(signal, filtered, integrated, rate):
     peaki = integrated[0]
     spki = 0
@@ -87,3 +85,42 @@ def _thresholding(signal, filtered, integrated, rate):
                 peaks.append(i)
         #TODO: correct first
     return peaks[1:]
+
+def _new_thresholding(signal, integrated, rate):
+    spki = 0
+    npki = 0
+    peaks = [0]
+    threshold = integrated[0]
+    i = 0
+    while i < len(integrated):
+        index = _next_cadidate(signal, integrated, i)
+        if index < 0:
+            i += 1
+            continue
+        peaki = integrated[index]
+        if peaki < threshold:
+            npki = 0.875 * npki + 0.125 * peaki
+        else:
+            spki = 0.875 * spki + 0.125 * peaki
+            peaks.append(index)
+            i = index + int(_MIN_RR * rate)
+        threshold = npki + 0.25 * (spki - npki)
+        i += 1
+    return peaks[1:]
+
+
+def _next_cadidate(signal, integrated, start_index):
+    candidate = start_index
+    value = signal[start_index]
+    j = start_index + 1
+    while j < len(integrated) and integrated[j] > integrated[j - 1]:
+        if signal[j] < value:
+            j += 1
+            continue
+        if signal[j - 1] < signal[j] and signal[j + 1] < signal[j]:
+            candidate = j
+            value = signal[j]
+        j += 1
+    if candidate == start_index:
+        return -1
+    return candidate
