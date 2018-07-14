@@ -1,6 +1,8 @@
 import numpy as np
+from matplotlib import pyplot as pp
 
 _WINDOW_SEC = 0.150
+_MIN_RR = 0.2
 
 
 def detect(signal, rate):
@@ -9,6 +11,14 @@ def detect(signal, rate):
     # x4, x3 - is not squared derivative
     integrated = _squared_derivative(filtered)
     integrated = _window_integration(integrated, int(_WINDOW_SEC * rate))  # x5
+    
+    # pp.subplot(211)
+    # pp.plot(signal)
+    # # pp.plot(filtered)
+    # pp.subplot(212)
+    # pp.plot(integrated)
+    # pp.show()
+
     return _thresholding(signal, filtered, integrated, rate)
 
 
@@ -82,31 +92,7 @@ def _thresholding(signal, filtered, integrated, rate):
         threshold2 = 0.5 * threshold1
 
         if integrated[i] >= threshold2:
-            if peaks[-1] + _WINDOW_SEC * rate < i:
+            if i - peaks[-1] >= _MIN_RR * rate:
                 peaks.append(i)
-
-    # peaks2 = np.array(peaks)
-    # avg = np.average(np.diff(peaks))
-
-    # for i in range(1, len(peaks)):
-    #     peakf = integrated[i - 1]
-    #     spkf = 0
-    #     npkf = 0
-
-    #     if peaks[i] - peaks[i - 1] >= 1.66 * avg:
-    #         for j in range(int(peaks[i - 1]) + 1, int(peaks[i])):
-    #             peakf = max(integrated[j], peakf)
-    #             xn = (signal[i] - filtered[j])
-    #             npkf = (npkf * (j - 1) + xn) / j
-    #             npkf = 0.125 * peakf + 0.875 * npkf
-    #             spkf = (spkf * (j - 1) + integrated[j]) / j
-    #             spkf = 0.125 * peakf + 0.875 * spkf
-
-    #             thresholdf1 = npkf + 0.25 * (spkf - npkf)
-    #             thresholdf2 = 0.5 * thresholdf1
-    #             if integrated[j] >= thresholdf2:
-    #                 if peaks2[-1] < j:
-    #                     peaks2.append(j)
-
-    # return peaks2
-    return peaks
+        #TODO: correct first
+    return peaks[1:]
