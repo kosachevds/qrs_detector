@@ -1,5 +1,4 @@
 import numpy as np
-from matplotlib import pyplot as pp
 
 _WINDOW_SEC = 0.150
 _MIN_RR = 0.2
@@ -11,14 +10,6 @@ def detect(signal, rate):
     # x4, x3 - is not squared derivative
     integrated = _squared_derivative(filtered)
     integrated = _window_integration(integrated, int(_WINDOW_SEC * rate))  # x5
-    
-    # pp.subplot(211)
-    # pp.plot(signal)
-    # # pp.plot(filtered)
-    # pp.subplot(212)
-    # pp.plot(integrated)
-    # pp.show()
-
     return _thresholding(signal, filtered, integrated, rate)
 
 
