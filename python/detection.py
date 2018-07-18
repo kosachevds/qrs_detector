@@ -103,8 +103,8 @@ def _thresholding(signal, filtered, integrated, rate):
 
 def _new_thresholding(integrated, rate):
     min_interval = int(_MIN_RR * rate)
-    peak_indicies = _find_peaks(np.array(integrated), limit=0.35,
-                                spacing=min_interval)
+    peak_indicies = _find_peaks(integrated, limit=0.35, spacing=min_interval)
+    # peak_indicies = _find_peaks_(integrated, limit=0.35, spacing=min_interval)
     spki = 0
     npki = 0
     peaks = []
@@ -126,33 +126,58 @@ def _new_thresholding(integrated, rate):
 
 def _find_peaks(data, spacing=1, limit=None):
     """
-    Janko Slavic peak detection algorithm and implementation.
-    https://github.com/jankoslavic/py-tools/tree/master/findpeaks
     Finds peaks in `data` which are of `spacing` width and >=`limit`.
     :param ndarray data: data
     :param float spacing: minimum spacing to the next peak (should be 1 or more)
     :param float limit: peaks should have value greater or equal
     :return array: detected peaks indexes array
     """
-    len_ = data.size
-    x = np.zeros(len_ + 2 * spacing)
+    data = np.array(data)
+    size = data.size
+    x = np.zeros(size + 2 * spacing)
     x[:spacing] = data[0] - 1.e-6
     x[-spacing:] = data[-1] - 1.e-6
-    x[spacing:spacing + len_] = data
-    peak_candidate = np.zeros(len_)
+    x[spacing:spacing + size] = data
+    peak_candidate = np.zeros(size)
     peak_candidate[:] = True
     for s in range(spacing):
         start = spacing - s - 1
-        h_b = x[start: start + len_]  # before
+        h_b = x[start: start + size]  # before
         start = spacing
-        h_c = x[start: start + len_]  # central
+        h_c = x[start: start + size]  # central
         start = spacing + s + 1
-        h_a = x[start: start + len_]  # after
+        h_a = x[start: start + size]  # after
         peak_candidate = np.logical_and(peak_candidate,
                                         np.logical_and(h_c > h_b, h_c > h_a))
-
     ind = np.argwhere(peak_candidate)
     ind = ind.reshape(ind.size)
     if limit is not None:
         ind = ind[data[ind] > limit]
     return ind
+
+
+def _find_peaks_(data, spacing, limit):
+    size = len(data)
+    x = [data[0] - 1.0e-6 for _ in range(spacing)]
+    x += [0 for _ in range(size)]
+    x += [data[-1] - 1.0e-6 for _ in range(spacing)]
+    candidate = [True for _ in range(size)]
+    for s in range(spacing):
+        start = spacing - s - 1
+        h_before = x[start:(start + size)]
+        start = spacing
+        h_central = x[start:(start + size)]
+        start = spacing + s + 1
+        h_after = x[start:(start + size)]
+        candidate = lists_and(candidate,
+                              lists_and(lists_greater(h_central, h_before),
+                                        lists_greater(h_central, h_after)))
+    return [i for i, x in enumerate(candidate) if x and data[i] > limit]
+
+
+def lists_and(left, right):
+    return [x[0] and x[1] for x in zip(left, right)]
+
+
+def lists_greater(left, right):
+    return [x[0] > x[1] for x in zip(left, right)]
