@@ -1,4 +1,5 @@
 import numpy as np
+import time
 # from matplotlib import pyplot as pp
 
 _WINDOW_SEC = 0.150
@@ -14,8 +15,8 @@ def detect(signal, rate):
     # pp.figure(0)
     # pp.title("Filtered")
     # pp.plot(filtered)
-    integrated = _squared_derivative(filtered)
-    integrated = _window_integration(integrated, int(_WINDOW_SEC * rate))
+    squared_der = _squared_derivative(filtered)
+    integrated = _window_integration(squared_der, int(_WINDOW_SEC * rate))
     delay += round(_WINDOW_SEC * rate) / 2
     # pp.figure(1)
     # pp.title("Integrated")
@@ -68,12 +69,10 @@ def _squared_derivative(signal):
 def _window_integration(signal, window_size):
     result = []
     for i, _ in enumerate(signal):
-        value = 0
-        for j in range(window_size):
-            if i - j < 0:
-                break
-            value += signal[i - j]
-        result.append(value / float(window_size))
+        first = i - (window_size - 1)
+        if first < 0:
+            first = 0
+        result.append(sum(signal[first:(i + 1)]) / float(window_size))
     return result
 
 
