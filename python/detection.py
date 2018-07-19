@@ -69,10 +69,9 @@ def _window_integration(signal, window_size):
     value = 0
     for i, x in enumerate(signal):
         first = i - (window_size - 1)
-        if first < 1:
-            value += x / window_size
-        else:
-            value += (x - signal[first - 1]) / window_size
+        value += x / window_size
+        if first > 0:
+            value -= signal[first - 1] / window_size
         result.append(value)
     return result
 
