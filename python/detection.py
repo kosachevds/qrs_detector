@@ -1,6 +1,4 @@
 import numpy as np
-import time
-# from matplotlib import pyplot as pp
 
 _WINDOW_SEC = 0.150
 _MIN_RR = 0.2
@@ -68,11 +66,14 @@ def _squared_derivative(signal):
 
 def _window_integration(signal, window_size):
     result = []
-    for i, _ in enumerate(signal):
+    value = 0
+    for i, x in enumerate(signal):
         first = i - (window_size - 1)
-        if first < 0:
-            first = 0
-        result.append(sum(signal[first:(i + 1)]) / float(window_size))
+        if first < 1:
+            value += x / window_size
+        else:
+            value += (x - signal[first - 1]) / window_size
+        result.append(value)
     return result
 
 
