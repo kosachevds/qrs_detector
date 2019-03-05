@@ -5,26 +5,26 @@ _MIN_RR = 0.2
 
 
 def detect(signal, rate):
-    delay_sec = 0
     filtered = _low_pass_filter(signal)
-    # In the paper LPF delay is 6 samples for sampling rate = 200
-    delay_sec += 6.0 / 200.0
     filtered = _high_pass_filter(filtered)
-    # HPF delay is 16 samples for sampling rate = 200
-    delay_sec += 16.0 / 200.0
     # pp.figure(0)
     # pp.title("Filtered")
     # pp.plot(filtered)
-    squared_der = _squared_derivative(filtered)
-    integrated = _window_integration(squared_der, int(_WINDOW_SEC * rate))
-    # delay_sec += _WINDOW_SEC / 2.0
+    squared_derivative = _squared_derivative(filtered)
+    samples_window = round(_WINDOW_SEC * rate)
+    integrated = _window_integration(squared_derivative, samples_window)
     # pp.figure(1)
     # pp.title("Integrated")
     # pp.plot(integrated)
     # pp.figure(2)
-    # return _thresholding(signal, filtered, integrated, rate)
-    samples_delay = delay_sec * rate
-    indices = [x - samples_delay for x in _new_thresholding(integrated, rate)]
+
+    # In the paper delay is 6 samples for LPF and 16 samples for HPF
+    # with sampling rate equals 200
+    delay_sec = (6 + 16) / 200.0
+    # delay_sec += _WINDOW_SEC / 2.0
+    offset = round(delay_sec * rate)
+
+    indices = [x - offset for x in _new_thresholding(integrated, rate)]
     return indices
 
 
