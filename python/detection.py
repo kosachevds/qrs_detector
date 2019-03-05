@@ -17,7 +17,7 @@ def detect(signal, rate):
     # delay_sec += _WINDOW_SEC / 2.0
     offset = round(delay_sec * rate)
 
-    indices = _new_thresholding(integrated, rate)
+    indices = _new_thresholding(integrated, round(_MIN_RR * rate))
     indices = [x - offset for x in indices]
     return indices
 
@@ -73,7 +73,7 @@ def _window_integration(signal, window_size):
     return result
 
 
-def _thresholding(signal, filtered, integrated, rate):
+def _thresholding(signal, filtered, integrated, min_rr_samples):
     peaki = integrated[0]
     spki = 0
     npki = 0
@@ -91,23 +91,22 @@ def _thresholding(signal, filtered, integrated, rate):
         threshold2 = 0.5 * threshold1
 
         if integrated[i] >= threshold2:
-            if i - peaks[-1] >= _MIN_RR * rate:
+            if i - peaks[-1] >= min_rr_samples:
                 peaks.append(i)
         # TODO: correct first
     return peaks[1:]
 
 
-def _new_thresholding(integrated, rate):
-    min_interval = int(_MIN_RR * rate)
-    # peak_indicies = _find_peaks(integrated, limit=0.35, spacing=min_interval)
-    peak_indicies = _find_peaks_(integrated, limit=0.35, spacing=min_interval)
+def _new_thresholding(integrated, min_rr_samples):
+    peak_indicies = _find_peaks(integrated, limit=0.35, spacing=min_rr_samples)
+    # peak_indicies = _find_peaks_(integrated, limit=0.35, spacing=min_rr_samples)
     spki = 0
     npki = 0
     peaks = []
     last_peak = 0
     threshold = 0
     for index in peak_indicies:
-        if last_peak > 0 and index - last_peak < min_interval:
+        if last_peak > 0 and index - last_peak < min_rr_samples:
             continue
         value = integrated[index]
         if value < threshold:
