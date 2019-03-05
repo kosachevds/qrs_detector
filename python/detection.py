@@ -97,6 +97,17 @@ def _thresholding(signal, filtered, integrated, min_rr_samples):
     return peaks[1:]
 
 
+def _find_local_max(values):
+    peak_index = None
+    for index in range(1, len(values) - 1):
+        value = values[index]
+        if value < values[index - 1] or value < values[index + 1]:
+            continue
+        if peak_index is None or value > values[peak_index]:
+            peak_index = index
+    return peak_index
+
+
 def _new_thresholding(integrated, min_rr_samples):
     peak_indicies = _find_peaks(integrated, limit=0.35, spacing=min_rr_samples)
     # peak_indicies = _find_peaks_(integrated, limit=0.35, spacing=min_rr_samples)
