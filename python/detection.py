@@ -5,24 +5,27 @@ _MIN_RR = 0.2
 
 
 def detect(signal, rate):
-    delay = 0
+    delay_sec = 0
     filtered = _low_pass_filter(signal)
-    delay += 6
+    # In the paper LPF delay is 6 samples for sampling rate = 200
+    delay_sec += 6.0 / 200.0
     filtered = _high_pass_filter(filtered)
-    delay += 16
+    # HPF delay is 16 samples for sampling rate = 200
+    delay_sec += 16.0 / 200.0
     # pp.figure(0)
     # pp.title("Filtered")
     # pp.plot(filtered)
     squared_der = _squared_derivative(filtered)
     integrated = _window_integration(squared_der, int(_WINDOW_SEC * rate))
-    delay += round(_WINDOW_SEC * rate) / 2
+    # delay_sec += _WINDOW_SEC / 2.0
     # pp.figure(1)
     # pp.title("Integrated")
     # pp.plot(integrated)
     # pp.figure(2)
     # return _thresholding(signal, filtered, integrated, rate)
-    indecies = [x - delay for x in _new_thresholding(integrated, rate)]
-    return indecies
+    samples_delay = delay_sec * rate
+    indices = [x - samples_delay for x in _new_thresholding(integrated, rate)]
+    return indices
 
 
 def _low_pass_filter(signal):
@@ -168,15 +171,15 @@ def _find_peaks_(data, spacing, limit):
         h_central = x[start:(start + size)]
         start = spacing + s + 1
         h_after = x[start:(start + size)]
-        candidate = lists_and(candidate,
-                              lists_and(lists_greater(h_central, h_before),
-                                        lists_greater(h_central, h_after)))
+        candidate = _lists_and(candidate,
+                              _lists_and(_lists_greater(h_central, h_before),
+                                        _lists_greater(h_central, h_after)))
     return [i for i, x in enumerate(candidate) if x and data[i] > limit]
 
 
-def lists_and(left, right):
+def _lists_and(left, right):
     return [x[0] and x[1] for x in zip(left, right)]
 
 
-def lists_greater(left, right):
+def _lists_greater(left, right):
     return [x[0] > x[1] for x in zip(left, right)]
