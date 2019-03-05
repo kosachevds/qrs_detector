@@ -20,17 +20,26 @@ def detect(signal, rate):
     min_rr_samples = round(_MIN_RR * rate)
     # indices = _new_thresholding(integrated, min_rr_samples)
     indices = _thresholding(integrated, min_rr_samples)
-    indices = [x - offset for x in indices]
-    return indices
+    _debug_plotting(signal, integrated, indices, offset)
+    return [x - offset for x in indices]
 
 
-def _debug_plotting(signal, integrated, indices):
+def _debug_plotting(signal, integrated, indices, offset):
     from matplotlib import pyplot as pp
 
     pp.plot(signal)
-    pp.plot(integrated)
+
+    signal_max = max(signal)
+    integrated_max = max(integrated)
+    normalized_integrated = [item / integrated_max * signal_max for item in integrated]
+    pp.plot(normalized_integrated)
+
     for peak in indices:
         pp.axvline(peak, color="r")
+
+    indices_with_offset = [x - offset for x in indices]
+    for peak in indices_with_offset:
+        pp.axvline(peak, color="g")
     pp.show()
 
 
