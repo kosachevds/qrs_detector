@@ -73,26 +73,26 @@ def _window_integration(signal, window_size):
     return result
 
 
-def _thresholding(signal, filtered, integrated, min_rr_samples):
-    peaki = integrated[0]
+def _thresholding(integrated, min_rr_samples):
     spki = 0
     npki = 0
     peaks = [0]
     threshold1 = spki
-    for i in range(1, len(integrated)):
-        peaki = max(peaki, integrated[i])
-        noise = (signal[i] - filtered[i])
-        npki = (npki * (i - 1) + noise) / i
-        npki = 0.875 * npki + 0.125 * peaki
-        spki = (spki * (i - 1) + integrated[i]) / i
-        spki = 0.875 * spki + 0.125 * peaki
+    for i in range(1, len(integrated) - 1):
+        peaki = integrated[i]
+        if peaki < integrated[i - 1] or peaki < integrated[i + 1]:
+            continue
+
+        if peaki <= threshold1:
+            npki = 0.875 * npki + 0.125 * peaki
+        else:
+            spki = 0.875 * spki + 0.125 * peaki
 
         threshold1 = npki + 0.25 * (spki - npki)
-        threshold2 = 0.5 * threshold1
+        # threshold2 = 0.5 * threshold1
 
-        if integrated[i] >= threshold2:
-            if i - peaks[-1] >= min_rr_samples:
-                peaks.append(i)
+        if peaki > threshold1 and i - peaks[-1] >= min_rr_samples:
+            peaks.append(i)
         # TODO: correct first
     return peaks[1:]
 
