@@ -24,6 +24,16 @@ def detect(signal, rate):
     return indices
 
 
+def _debug_plotting(signal, integrated, indices):
+    from matplotlib import pyplot as pp
+
+    pp.plot(signal)
+    pp.plot(integrated)
+    for peak in indices:
+        pp.axvline(peak, color="r")
+    pp.show()
+
+
 def _low_pass_filter(signal):
     result = []
     for index, value in enumerate(signal):
