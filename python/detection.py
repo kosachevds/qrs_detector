@@ -7,16 +7,9 @@ _MIN_RR = 0.2
 def detect(signal, rate):
     filtered = _low_pass_filter(signal)
     filtered = _high_pass_filter(filtered)
-    # pp.figure(0)
-    # pp.title("Filtered")
-    # pp.plot(filtered)
     squared_derivative = _squared_derivative(filtered)
     samples_window = round(_WINDOW_SEC * rate)
     integrated = _window_integration(squared_derivative, samples_window)
-    # pp.figure(1)
-    # pp.title("Integrated")
-    # pp.plot(integrated)
-    # pp.figure(2)
 
     # In the paper delay is 6 samples for LPF and 16 samples for HPF
     # with sampling rate equals 200
