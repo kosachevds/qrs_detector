@@ -1,6 +1,6 @@
 import numpy as np
 
-_WINDOW_SEC = 0.150
+_WINDOW_SEC = 0.160
 _MIN_RR = 0.2
 
 
@@ -13,7 +13,7 @@ def detect(signal, rate):
 
     # In the paper delay is 6 samples for LPF and 16 samples for HPF
     # with sampling rate equals 200
-    delay_sec = (6 + 16) / 200.0
+    delay_sec = (6 + 16) / 2000.0
     # delay_sec += _WINDOW_SEC / 2.0
     offset = round(delay_sec * rate)
 
