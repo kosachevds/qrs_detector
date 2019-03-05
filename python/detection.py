@@ -24,7 +24,8 @@ def detect(signal, rate):
     # delay_sec += _WINDOW_SEC / 2.0
     offset = round(delay_sec * rate)
 
-    indices = [x - offset for x in _new_thresholding(integrated, rate)]
+    indices = _new_thresholding(integrated, rate)
+    indices = [x - offset for x in indices]
     return indices
 
 
@@ -105,8 +106,8 @@ def _thresholding(signal, filtered, integrated, rate):
 
 def _new_thresholding(integrated, rate):
     min_interval = int(_MIN_RR * rate)
-    peak_indicies = _find_peaks(integrated, limit=0.35, spacing=min_interval)
-    # peak_indicies = _find_peaks_(integrated, limit=0.35, spacing=min_interval)
+    # peak_indicies = _find_peaks(integrated, limit=0.35, spacing=min_interval)
+    peak_indicies = _find_peaks_(integrated, limit=0.35, spacing=min_interval)
     spki = 0
     npki = 0
     peaks = []
@@ -161,7 +162,7 @@ def _find_peaks(data, spacing=1, limit=None):
 def _find_peaks_(data, spacing, limit):
     size = len(data)
     x = [data[0] - 1.0e-6 for _ in range(spacing)]
-    x += [0 for _ in range(size)]
+    x += data
     x += [data[-1] - 1.0e-6 for _ in range(spacing)]
     candidate = [True for _ in range(size)]
     for s in range(spacing):
@@ -171,15 +172,15 @@ def _find_peaks_(data, spacing, limit):
         h_central = x[start:(start + size)]
         start = spacing + s + 1
         h_after = x[start:(start + size)]
-        candidate = _lists_and(candidate,
-                              _lists_and(_lists_greater(h_central, h_before),
-                                        _lists_greater(h_central, h_after)))
+        candidate = _lists_and(candidate, _lists_and(_lists_greater(h_central, h_before), _lists_greater(h_central, h_after)))
     return [i for i, x in enumerate(candidate) if x and data[i] > limit]
 
 
 def _lists_and(left, right):
-    return [x[0] and x[1] for x in zip(left, right)]
+    size = len(left)
+    return [left[i] and right[i] for i in range(size)]
 
 
 def _lists_greater(left, right):
-    return [x[0] > x[1] for x in zip(left, right)]
+    size = len(left)
+    return [left[i] > right[i] for i in range(size)]
