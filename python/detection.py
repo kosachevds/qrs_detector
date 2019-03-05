@@ -17,7 +17,9 @@ def detect(signal, rate):
     # delay_sec += _WINDOW_SEC / 2.0
     offset = round(delay_sec * rate)
 
-    indices = _new_thresholding(integrated, round(_MIN_RR * rate))
+    min_rr_samples = round(_MIN_RR * rate)
+    # indices = _new_thresholding(integrated, min_rr_samples)
+    indices = _thresholding(integrated, min_rr_samples)
     indices = [x - offset for x in indices]
     return indices
 
