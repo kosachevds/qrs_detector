@@ -96,9 +96,11 @@ def _thresholding(integrated, min_rr_samples):
     npki = 0
     peaks = []
     threshold1 = spki
-    for i in range(1, len(integrated) - 1):
+    i = 1
+    while i < len(integrated) - 1:
         peaki = integrated[i]
         if peaki < integrated[i - 1] or peaki < integrated[i + 1]:
+            i += 1
             continue
 
         if peaki <= threshold1:
@@ -110,7 +112,8 @@ def _thresholding(integrated, min_rr_samples):
         # threshold2 = 0.5 * threshold1
 
         if peaki < threshold1:
-            continue
-        if not peaks or i - peaks[-1] >= min_rr_samples:
+            i += 1
+        else:
             peaks.append(i)
+            i += min_rr_samples
     return peaks
