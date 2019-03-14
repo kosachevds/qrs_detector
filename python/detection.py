@@ -12,11 +12,10 @@ def detect(signal, rate):
     # In the paper delay is 6 samples for LPF and 16 samples for HPF
     # with sampling rate equals 200
     delay_sec = (6 + 16) / 2000.0
-    # delay_sec += _WINDOW_SEC / 2.0
+    # delay_sec += _WINDOW_SEC / 2.0  # integration delay
     offset = round(delay_sec * rate)
 
     min_rr_samples = round(_MIN_RR * rate)
-    # indices = _new_thresholding(integrated, min_rr_samples)
     indices = _thresholding(integrated, min_rr_samples)
     _debug_plotting(signal, integrated, indices, offset)
     return [x - offset for x in indices]
@@ -95,7 +94,7 @@ def _window_integration(signal, window_size):
 def _thresholding(integrated, min_rr_samples):
     spki = 0
     npki = 0
-    peaks = [0]
+    peaks = []
     threshold1 = spki
     for i in range(1, len(integrated) - 1):
         peaki = integrated[i]
@@ -110,7 +109,8 @@ def _thresholding(integrated, min_rr_samples):
         threshold1 = npki + 0.25 * (spki - npki)
         # threshold2 = 0.5 * threshold1
 
-        if peaki > threshold1 and i - peaks[-1] >= min_rr_samples:
+        if peaki < threshold1:
+            continue
+        if not peaks or i - peaks[-1] >= min_rr_samples:
             peaks.append(i)
-        # TODO: correct first
-    return peaks[1:]
+    return peaks
