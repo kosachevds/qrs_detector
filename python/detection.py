@@ -1,5 +1,5 @@
 _WINDOW_SEC = 0.160
-_MIN_RR = 0.2
+_MIN_RR = 0.2  # compare with 0.33
 
 
 def detect(signal, rate):
@@ -12,7 +12,6 @@ def detect(signal, rate):
     # In the paper delay is 6 samples for LPF and 16 samples for HPF
     # with sampling rate equals 200
     delay_sec = (6 + 16) / 2000.0
-    # delay_sec += _WINDOW_SEC / 2.0  # integration delay
     offset = round(delay_sec * rate)
 
     min_rr_samples = round(_MIN_RR * rate)
@@ -28,7 +27,8 @@ def _debug_plotting(signal, integrated, indices, offset):
 
     signal_max = max(signal)
     integrated_max = max(integrated)
-    normalized_integrated = [item / integrated_max * signal_max for item in integrated]
+    normalized_integrated = [item / integrated_max * signal_max
+                             for item in integrated]
     pp.plot(normalized_integrated)
 
     for peak in indices:
