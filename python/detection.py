@@ -127,30 +127,3 @@ def _find_local_max(values):
         if peak_index is None or value > values[peak_index]:
             peak_index = index
     return peak_index
-
-
-def _find_peaks_(data, spacing, limit):
-    size = len(data)
-    x = [data[0] - 1.0e-6 for _ in range(spacing)]
-    x += data
-    x += [data[-1] - 1.0e-6 for _ in range(spacing)]
-    candidate = [True for _ in range(size)]
-    for s in range(spacing):
-        start = spacing - s - 1
-        h_before = x[start:(start + size)]
-        start = spacing
-        h_central = x[start:(start + size)]
-        start = spacing + s + 1
-        h_after = x[start:(start + size)]
-        candidate = _lists_and(candidate, _lists_and(_lists_greater(h_central, h_before), _lists_greater(h_central, h_after)))
-    return [i for i, x in enumerate(candidate) if x and data[i] > limit]
-
-
-def _lists_and(left, right):
-    size = len(left)
-    return [left[i] and right[i] for i in range(size)]
-
-
-def _lists_greater(left, right):
-    size = len(left)
-    return [left[i] > right[i] for i in range(size)]
