@@ -129,28 +129,6 @@ def _find_local_max(values):
     return peak_index
 
 
-def _new_thresholding(integrated, min_rr_samples):
-    peak_indicies = _find_peaks(integrated, limit=0.35, spacing=min_rr_samples)
-    # peak_indicies = _find_peaks_(integrated, limit=0.35, spacing=min_rr_samples)
-    spki = 0
-    npki = 0
-    peaks = []
-    last_peak = 0
-    threshold = 0
-    for index in peak_indicies:
-        if last_peak > 0 and index - last_peak < min_rr_samples:
-            continue
-        value = integrated[index]
-        if value < threshold:
-            npki = 0.875 * npki + 0.125 * value
-        else:
-            peaks.append(index)
-            spki = 0.875 * spki + 0.125 * value
-            last_peak = index
-        threshold = npki + 0.25 * (spki - npki)
-    return peaks
-
-
 def _find_peaks(data, spacing=1, limit=None):
     """
     Finds peaks in `data` which are of `spacing` width and >=`limit`.
