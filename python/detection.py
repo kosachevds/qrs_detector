@@ -1,5 +1,3 @@
-import numpy as np
-
 _WINDOW_SEC = 0.160
 _MIN_RR = 0.2
 
@@ -116,14 +114,3 @@ def _thresholding(integrated, min_rr_samples):
             peaks.append(i)
         # TODO: correct first
     return peaks[1:]
-
-
-def _find_local_max(values):
-    peak_index = None
-    for index in range(1, len(values) - 1):
-        value = values[index]
-        if value < values[index - 1] or value < values[index + 1]:
-            continue
-        if peak_index is None or value > values[peak_index]:
-            peak_index = index
-    return peak_index
