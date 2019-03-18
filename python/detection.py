@@ -1,6 +1,6 @@
 from scipy import signal as scisig
 
-_WINDOW_SEC = 0.150
+_WINDOW_SEC = 0.160
 _MIN_RR = 0.2  # compare with 0.33
 _PAPER_SIGNAL_RATE = 200.0
 
@@ -17,18 +17,17 @@ def detect(signal, rate):
     integrated = _window_integration(buffer, samples_window)
 
     min_rr_samples = round(_MIN_RR * rate)
-    indices, th1 = _thresholding(integrated, min_rr_samples)
-    _debug_plotting(signal, integrated, indices, th1_list=th1)
+    indices, _ = _thresholding(integrated, min_rr_samples)
+    # _debug_plotting(signal, integrated, indices)
     return [x - samples_delay for x in indices]
 
 
 def _debug_plotting(signal, integrated, indices, offset=None, th1_list=None):
     from matplotlib import pyplot as pp
 
-    # pp.plot(signal)
+    pp.plot(signal)
 
-    # signal_max = max(signal)
-    # integrated = _normalize(integrated, signal_max)
+    integrated = _normalize(integrated, max(signal))
     pp.plot(integrated)
 
     for peak in indices:
@@ -39,7 +38,7 @@ def _debug_plotting(signal, integrated, indices, offset=None, th1_list=None):
         for peak in indices_with_offset:
             pp.axvline(peak, color="g")
     if th1_list is not None:
-        # th1_list = _normalize(th1_list, signal_max)
+        th1_list = _normalize(th1_list, max(signal))
         pp.plot(th1_list)
     pp.show()
 

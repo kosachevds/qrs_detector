@@ -40,9 +40,10 @@ def read_signal_with_peaks(filename):
         is_peak = bool(int(is_peak))
         if is_peak:
             peaks.append(index)
+    my_peaks = detection.detect(signal, sampling_rate)
+
     pp.plot(signal)
     plot_vlines(peaks, "g")
-    my_peaks = detection.detect(signal, sampling_rate)
     plot_vlines(my_peaks, "r")
     pp.show()
 
