@@ -13,13 +13,13 @@ def detect(signal, rate):
 
     # In the paper delay is 6 samples for LPF and 16 samples for HPF
     # with sampling rate equals 200
-    delay_sec = (6 + 16) / 2000.0
-    offset = round(delay_sec * rate)
+    delay_sec = (6 + 16) / 200
+    samples_delay = round(delay_sec * rate)
 
     min_rr_samples = round(_MIN_RR * rate)
-    indices, th1_list = _thresholding(integrated, min_rr_samples)
-    _debug_plotting(signal, integrated, indices, th1_list=th1_list)
-    return [x - offset for x in indices]
+    indices, _ = _thresholding(integrated, min_rr_samples)
+    _debug_plotting(signal, integrated, indices, offset=samples_delay)
+    return [x - samples_delay for x in indices]
 
 
 def _debug_plotting(signal, integrated, indices, offset=None, th1_list=None):
