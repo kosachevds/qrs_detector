@@ -1,34 +1,32 @@
-_WINDOW_SEC = 0.160
+from scipy import signal as scisig
+
+_WINDOW_SEC = 0.200
 _MIN_RR = 0.2  # compare with 0.33
+_PAPER_SIGNAL_RATE = 200.0
 
 
 def detect(signal, rate):
-    # fix: this filters work only for 200 Hz sampling rate
-    buffer = _low_pass_filter(signal)
-    buffer = _high_pass_filter(buffer)
+    buffer, samples_delay = _filter_signal(signal, rate)
+
     buffer = _compute_normalized_derivative(buffer)
     buffer = [x * x for x in buffer]
+
     samples_window = round(_WINDOW_SEC * rate)
     integrated = _window_integration(buffer, samples_window)
 
-    # In the paper delay is 6 samples for LPF and 16 samples for HPF
-    # with sampling rate equals 200
-    delay_sec = (6 + 16) / 200
-    samples_delay = round(delay_sec * rate)
-
     min_rr_samples = round(_MIN_RR * rate)
-    indices, _ = _thresholding(integrated, min_rr_samples)
-    _debug_plotting(signal, integrated, indices, offset=samples_delay)
+    indices, th1 = _thresholding(integrated, min_rr_samples)
+    _debug_plotting(signal, integrated, indices, th1_list=th1)
     return [x - samples_delay for x in indices]
 
 
 def _debug_plotting(signal, integrated, indices, offset=None, th1_list=None):
     from matplotlib import pyplot as pp
 
-    pp.plot(signal)
+    # pp.plot(signal)
 
-    signal_max = max(signal)
-    integrated = _normalize(integrated, signal_max)
+    # signal_max = max(signal)
+    # integrated = _normalize(integrated, signal_max)
     pp.plot(integrated)
 
     for peak in indices:
@@ -39,7 +37,7 @@ def _debug_plotting(signal, integrated, indices, offset=None, th1_list=None):
         for peak in indices_with_offset:
             pp.axvline(peak, color="g")
     if th1_list is not None:
-        th1_list = _normalize(th1_list, signal_max)
+        # th1_list = _normalize(th1_list, signal_max)
         pp.plot(th1_list)
     pp.show()
 
@@ -78,6 +76,26 @@ def _high_pass_filter(signal):
     return result
 
 
+def _filter_signal(signal, rate):
+    result = None
+    delay = None
+    if rate == _PAPER_SIGNAL_RATE:
+        # fix: this filters work only for 200 Hz sampling rate
+        buffer = _low_pass_filter(signal)
+        result = _high_pass_filter(buffer)
+        # In the paper delay is 6 samples for LPF and 16 samples for HPF
+        # with sampling rate equals 200
+        delay = 6 + 16
+    else:
+        nyq = 0.5 * rate
+        lower = 5 / nyq
+        upper = 15 / nyq
+        b, a = scisig.butter(2, [lower, upper], btype="band")
+        result = scisig.filtfilt(b, a, signal)
+        delay = 0
+    return result, delay
+
+
 def _compute_normalized_derivative(signal):
     buffer = []
     max_value = 0.0
@@ -114,7 +132,7 @@ def _thresholding(integrated, min_rr_samples):
         i += 1
         th1_list.append(threshold1)
         peaki = integrated[i]
-        if peaki < integrated[i - 1] or peaki < integrated[i + 1]:
+        if peaki < integrated[i - 1] or peaki <= integrated[i + 1]:
             continue
 
         if peaki <= threshold1:
