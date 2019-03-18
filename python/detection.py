@@ -15,21 +15,19 @@ def detect(signal, rate):
     offset = round(delay_sec * rate)
 
     min_rr_samples = round(_MIN_RR * rate)
-    indices = _thresholding(integrated, min_rr_samples)
-    _debug_plotting(signal, integrated, indices)
+    indices, th1_list = _thresholding(integrated, min_rr_samples)
+    _debug_plotting(signal, integrated, indices, th1_list=th1_list)
     return [x - offset for x in indices]
 
 
-def _debug_plotting(signal, integrated, indices, offset=None):
+def _debug_plotting(signal, integrated, indices, offset=None, th1_list=None):
     from matplotlib import pyplot as pp
 
     pp.plot(signal)
 
     signal_max = max(signal)
-    integrated_max = max(integrated)
-    normalized_integrated = [item / integrated_max * signal_max
-                             for item in integrated]
-    pp.plot(normalized_integrated)
+    integrated = _normalize(integrated, signal_max)
+    pp.plot(integrated)
 
     for peak in indices:
         pp.axvline(peak, color="r")
@@ -38,7 +36,15 @@ def _debug_plotting(signal, integrated, indices, offset=None):
         indices_with_offset = [x - offset for x in indices]
         for peak in indices_with_offset:
             pp.axvline(peak, color="g")
+    if th1_list is not None:
+        th1_list = _normalize(th1_list, signal_max)
+        pp.plot(th1_list)
     pp.show()
+
+
+def _normalize(values, required_max):
+    max_value = max(values)
+    return [item / max_value * required_max for item in values]
 
 
 def _low_pass_filter(signal):
@@ -97,11 +103,13 @@ def _thresholding(integrated, min_rr_samples):
     npki = 0
     peaks = []
     threshold1 = spki
-    i = 1
-    while i < len(integrated) - 1:
+    th1_list = []
+    i = 0
+    while i < len(integrated) - 2:
+        i += 1
+        th1_list.append(threshold1)
         peaki = integrated[i]
         if peaki < integrated[i - 1] or peaki < integrated[i + 1]:
-            i += 1
             continue
 
         if peaki <= threshold1:
@@ -112,9 +120,7 @@ def _thresholding(integrated, min_rr_samples):
         threshold1 = npki + 0.25 * (spki - npki)
         # threshold2 = 0.5 * threshold1
 
-        if peaki < threshold1:
-            i += 1
-        else:
-            peaks.append(i)
-            i += min_rr_samples
-    return peaks
+        if peaki > threshold1:
+            if not peaks or i - peaks[-1] >= min_rr_samples:
+                peaks.append(i)
+    return peaks, th1_list
