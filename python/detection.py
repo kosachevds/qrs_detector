@@ -3,11 +3,13 @@ _MIN_RR = 0.2  # compare with 0.33
 
 
 def detect(signal, rate):
-    filtered = _low_pass_filter(signal)
-    filtered = _high_pass_filter(filtered)
-    squared_derivative = _squared_derivative(filtered)
+    # fix: this filters work only for 200 Hz sampling rate
+    buffer = _low_pass_filter(signal)
+    buffer = _high_pass_filter(buffer)
+    buffer = _compute_normalized_derivative(buffer)
+    buffer = [x * x for x in buffer]
     samples_window = round(_WINDOW_SEC * rate)
-    integrated = _window_integration(squared_derivative, samples_window)
+    integrated = _window_integration(buffer, samples_window)
 
     # In the paper delay is 6 samples for LPF and 16 samples for HPF
     # with sampling rate equals 200
@@ -76,14 +78,17 @@ def _high_pass_filter(signal):
     return result
 
 
-def _squared_derivative(signal):
-    result = []
+def _compute_normalized_derivative(signal):
+    buffer = []
+    max_value = 0.0
     for index in range(2, len(signal) - 2):
         value = (signal[index + 2] + 2 * signal[index + 1] -
                  signal[index - 2] - 2 * signal[index - 1])
         value /= 8.0
-        result.append(value * value)
-    return result
+        if value > max_value:
+            max_value = value
+        buffer.append(value)
+    return [x / max_value for x in buffer]
 
 
 def _window_integration(signal, window_size):
