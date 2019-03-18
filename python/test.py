@@ -23,11 +23,16 @@ def detect_and_show(filename):
 
 
 def read_signal_with_peaks(filename):
+    second_count = 5
+    sampling_rate = 2000
+    signal_size = int(second_count * sampling_rate)
     with open(os.path.join(_DATA_DIR, filename)) as in_file:
         lines = in_file.readlines()
     signal = []
     peaks = []
     for index, line in enumerate(lines):
+        if signal_size and index >= signal_size:
+            break
         if not line or line == '\n':
             continue
         value, is_peak = line.split()
@@ -35,14 +40,22 @@ def read_signal_with_peaks(filename):
         is_peak = bool(int(is_peak))
         if is_peak:
             peaks.append(index)
-    plot_signal_with_peaks(signal, peaks)
+    pp.plot(signal)
+    plot_vlines(peaks, "g")
+    my_peaks = detection.detect(signal, sampling_rate)
+    plot_vlines(my_peaks, "r")
     pp.show()
 
 
 def plot_signal_with_peaks(signal, peaks):
     pp.plot(signal)
-    for peak in peaks:
-        pp.axvline(peak, color="r")
+    plot_vlines(peaks)
+
+
+def plot_vlines(x_list, color="r"):
+    for item in x_list:
+        pp.axvline(item, color=color)
+
 
 if __name__ == '__main__':
     main()
