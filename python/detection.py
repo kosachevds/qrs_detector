@@ -1,6 +1,6 @@
 from scipy import signal as scisig
 
-_WINDOW_SEC = 0.200
+_WINDOW_SEC = 0.150
 _MIN_RR = 0.2  # compare with 0.33
 _PAPER_SIGNAL_RATE = 200.0
 
@@ -8,7 +8,8 @@ _PAPER_SIGNAL_RATE = 200.0
 def detect(signal, rate):
     buffer, samples_delay = _filter_signal(signal, rate)
 
-    buffer = _compute_normalized_derivative(buffer)
+    buffer = _compute_derivative(buffer)
+    buffer = _normalize(buffer)
     buffer = [x * x for x in buffer]
 
     samples_window = round(_WINDOW_SEC * rate)
@@ -42,7 +43,7 @@ def _debug_plotting(signal, integrated, indices, offset=None, th1_list=None):
     pp.show()
 
 
-def _normalize(values, required_max):
+def _normalize(values, required_max=1.0):
     max_value = max(values)
     return [item / max_value * required_max for item in values]
 
@@ -96,7 +97,7 @@ def _filter_signal(signal, rate):
     return result, delay
 
 
-def _compute_normalized_derivative(signal):
+def _compute_derivative(signal):
     buffer = []
     max_value = 0.0
     for index in range(2, len(signal) - 2):
@@ -106,7 +107,7 @@ def _compute_normalized_derivative(signal):
         if value > max_value:
             max_value = value
         buffer.append(value)
-    return [x / max_value for x in buffer]
+    return buffer
 
 
 def _window_integration(signal, window_size):
