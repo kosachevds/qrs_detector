@@ -7,6 +7,7 @@ _PAPER_SIGNAL_RATE = 200.0
 
 def detect(signal, rate):
     buffer, samples_delay = _filter_signal(signal, rate)
+    buffer = _normalize(buffer)
 
     buffer = _compute_derivative(buffer)
     buffer = _normalize(buffer)
