@@ -23,7 +23,7 @@ def detect_and_show(filename):
 
 
 def read_signal_with_peaks(filename):
-    second_count = 5
+    second_count = 0
     sampling_rate = 2000
     signal_size = int(second_count * sampling_rate)
     with open(os.path.join(_DATA_DIR, filename)) as in_file:
