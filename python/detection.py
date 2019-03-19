@@ -19,29 +19,7 @@ def detect(signal, rate):
 
     min_rr_samples = round(_MIN_RR * rate)
     indices, _ = _thresholding(integrated, min_rr_samples)
-    _debug_plotting(signal, integrated, indices, samples_delay)
     return [x - samples_delay for x in indices]
-
-
-def _debug_plotting(signal, integrated, indices, offset=None, th1_list=None):
-    from matplotlib import pyplot as pp
-
-    pp.plot(signal)
-
-    integrated = _normalize(integrated, max(signal))
-    pp.plot(integrated)
-
-    for peak in indices:
-        pp.axvline(peak, color="r")
-
-    if offset is not None:
-        indices_with_offset = [x - offset for x in indices]
-        for peak in indices_with_offset:
-            pp.axvline(peak, color="g")
-    if th1_list is not None:
-        th1_list = _normalize(th1_list, max(signal))
-        pp.plot(th1_list)
-    pp.show()
 
 
 def _normalize(values, required_max=1.0):
