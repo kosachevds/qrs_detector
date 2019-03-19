@@ -14,11 +14,12 @@ def detect(signal, rate):
     buffer = [x * x for x in buffer]
 
     samples_window = round(_WINDOW_SEC * rate)
+    samples_delay += samples_window / 2
     integrated = _window_integration(buffer, samples_window)
 
     min_rr_samples = round(_MIN_RR * rate)
     indices, _ = _thresholding(integrated, min_rr_samples)
-    # _debug_plotting(signal, integrated, indices)
+    _debug_plotting(signal, integrated, indices, samples_delay)
     return [x - samples_delay for x in indices]
 
 
@@ -145,6 +146,10 @@ def _thresholding(integrated, min_rr_samples):
         # threshold2 = 0.5 * threshold1
 
         if peaki > threshold1:
-            if not peaks or i - peaks[-1] >= min_rr_samples:
+            if not peaks:
                 peaks.append(i)
+            elif i - peaks[-1] >= min_rr_samples:
+                peaks.append(i)
+            elif integrated[peaks[-1]] < peaki:
+                peaks[-1] = i
     return peaks, th1_list
