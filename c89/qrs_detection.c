@@ -20,9 +20,13 @@ int DetectPeaks(double const* signal, int size, char* result, double rate)
 
     buffer = malloc(size * sizeof(double));
     FilterData(signal, size, buffer);
+    Normalize(signal, size);
+
     derivative = malloc(size * sizeof(double));
     ComputeDerivative(buffer, size, derivative);
+    Normalize(derivative, size);
     ArrayPow2(derivative, size);
+
     WindowIntegration(derivative, size, buffer, (int)(WINDOW_SEC * rate));
     free(derivative);
     memset(result, 0, size * sizeof(char));
