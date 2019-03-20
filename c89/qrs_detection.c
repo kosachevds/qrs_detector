@@ -13,6 +13,7 @@ static void ArrayPow2(double* signal, int size);
 static void WindowIntegration(double const* signal, int size, double* output, int window_size);
 static int Thresholding(const double* integrated, int size, int mir_rr_width, char* result);
 static void Normalize(double* values, int size);
+static void SubtractDelay(char* qrs_detection_result, int size, int samples_delay);
 
 int DetectQrsPeaks(double const* signal, int size, char* result, double rate)
 {
@@ -202,5 +203,18 @@ void Normalize(double* values, int size)
 
     for (i = 0; i < size; ++i) {
         values[i] /= max_value;
+    }
+}
+
+void SubtractDelay(char* qrs_detection_result, int size, int samples_delay)
+{
+    int i;
+
+    for (i = samples_delay; i < size; ++i) {
+        if (qrs_detection_result[i] == MARK_NO_QRS) {
+            continue;
+        }
+        qrs_detection_result[i] = MARK_NO_QRS;
+        qrs_detection_result[i - samples_delay] = MARK_QRS;
     }
 }
