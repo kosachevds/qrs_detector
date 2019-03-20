@@ -5,37 +5,27 @@
 #define WINDOW_SEC (0.160)
 #define MIN_RR_SEC (0.200)
 
-typedef struct
-{
-    int size;
-    double rate;
-    double const* signal;
-    double* filtered;
-    double* integrated;
-} Detector;
-
 static void FilterData(double const* signal, int size, double* output);
 static void SquaredDerivative(double const* signal, int size, double* output);
 static void WindowIntegration(double const* signal, int size, double* output, int window_size);
 static int Thresholding(const double* integrated, int size, double rate, char* result);
+// static void Normalize(double* values, int size);
 
 int DetectPeaks(double const* signal, int size, char* result, double rate)
 {
     int count;
-    Detector data = { size, rate, signal, NULL, NULL };
-    double* buffer;
+    double *buffer;  // filtered signal, integrated signal
+    double *squared_derivative;
 
-    data.filtered = malloc(size * sizeof(double));
-    FilterData(signal, size, data.filtered);
     buffer = malloc(size * sizeof(double));
-    SquaredDerivative(data.filtered, size, buffer);
-    data.integrated = malloc(size * sizeof(double));
-    WindowIntegration(buffer, size, data.integrated, (int)(WINDOW_SEC * rate));
-    free(buffer);
+    FilterData(signal, size, buffer);
+    squared_derivative = malloc(size * sizeof(double));
+    SquaredDerivative(buffer, size, squared_derivative);
+    WindowIntegration(squared_derivative, size, buffer, (int)(WINDOW_SEC * rate));
+    free(squared_derivative);
     memset(result, 0, size * sizeof(char));
-    count = Thresholding(data.integrated, data.size, data.rate, result);
-    free(data.integrated);
-    free(data.filtered);
+    count = Thresholding(buffer, size, rate, result);
+    free(buffer);
     return count;
 }
 
