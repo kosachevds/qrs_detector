@@ -6,8 +6,8 @@
 #define WINDOW_SEC (0.160)
 #define MIN_RR_SEC (0.200)
 
-static void FilterData_(double const* signal, int size, double* output);
 static void FilterSignal(double const* signal, int size, double* output);
+static void ApplyArticleFilter(double const* signal, int size, double* output);
 static void ComputeDerivative(double const* signal, int size, double* output);
 static void ArrayPow2(double* signal, int size);
 static void WindowIntegration(double const* signal, int size, double* output, int window_size);
@@ -23,7 +23,7 @@ int DetectPeaks(double const* signal, int size, char* result, double rate)
     double *derivative;
 
     buffer = malloc(size * sizeof(double));
-    FilterData_(signal, size, buffer);
+    FilterSignal(signal, size, rate, buffer);
     Normalize(signal, size);
 
     derivative = malloc(size * sizeof(double));
@@ -42,7 +42,7 @@ int DetectPeaks(double const* signal, int size, char* result, double rate)
 
 /*****************************************************************************/
 
-void FilterData_(double const* signal, int size, double* output)
+void ApplyArticleFilter(double const* signal, int size, double* output)
 {
     int index;
     double* buffer;
@@ -87,9 +87,15 @@ void FilterData_(double const* signal, int size, double* output)
 
 void FilterSignal(double const* signal, int size, double rate, double* output)
 {
+    const double ARTICLE_SAMPLING_RATE = 200.0;
     const double LOWER_HZ = 5.0;
     const double UPPER_HZ = 15.0;
     Filter* filter;
+
+    if (rate == ARTICLE_SAMPLING_RATE) {
+        ApplyArticleFilter(signal, size, output);
+        return;
+    }
 
     memcpy(output, signal, size * sizeof(double));
 
