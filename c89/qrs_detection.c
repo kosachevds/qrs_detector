@@ -9,7 +9,7 @@ static void FilterData(double const* signal, int size, double* output);
 static void SquaredDerivative(double const* signal, int size, double* output);
 static void WindowIntegration(double const* signal, int size, double* output, int window_size);
 static int Thresholding(const double* integrated, int size, double rate, char* result);
-// static void Normalize(double* values, int size);
+static void Normalize(double* values, int size);
 
 int DetectPeaks(double const* signal, int size, char* result, double rate)
 {
@@ -146,4 +146,20 @@ int Thresholding(const double* integrated, int size, double rate, char* result)
         }
     }
     return count;
+}
+
+void Normalize(double* values, int size)
+{
+    int i;
+    double max_value = values[0];
+
+    for (i = 1; i < size; ++i) {
+        if (values[i] > max_value) {
+            max_value = values[i];
+        }
+    }
+
+    for (i = 0; i < size; ++i) {
+        values[i] /= max_value;
+    }
 }
