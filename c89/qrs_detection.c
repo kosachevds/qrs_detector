@@ -9,11 +9,13 @@ static void FilterData(double const* signal, int size, double* output);
 static void ComputeDerivative(double const* signal, int size, double* output);
 static void ArrayPow2(double* signal, int size);
 static void WindowIntegration(double const* signal, int size, double* output, int window_size);
-static int Thresholding(const double* integrated, int size, double rate, char* result);
+static int Thresholding(const double* integrated, int size, double rate, char* result, int mir_rr_width);
 static void Normalize(double* values, int size);
 
 int DetectPeaks(double const* signal, int size, char* result, double rate)
 {
+    const int WINDOW_SIZE = (int)(WINDOW_SEC * rate);
+    const int MIN_RR = (int)(MIN_RR_SEC * rate);
     int count;
     double *buffer;  // filtered signal, integrated signal
     double *derivative;
@@ -27,10 +29,10 @@ int DetectPeaks(double const* signal, int size, char* result, double rate)
     Normalize(derivative, size);
     ArrayPow2(derivative, size);
 
-    WindowIntegration(derivative, size, buffer, (int)(WINDOW_SEC * rate));
+    WindowIntegration(derivative, size, buffer, WINDOW_SIZE);
     free(derivative);
     memset(result, 0, size * sizeof(char));
-    count = Thresholding(buffer, size, rate, result);
+    count = Thresholding(buffer, size, rate, result, MIN_RR);
     free(buffer);
     return count;
 }
@@ -121,10 +123,8 @@ void WindowIntegration(double const* signal, int size, double* output, int windo
     }
 }
 
-int Thresholding(const double* integrated, int size, double rate, char* result)
+int Thresholding(const double* integrated, int size, double rate, char* result, int mir_rr_width)
 {
-    const int MIN_RR = (int)(MIN_RR_SEC * rate);
-    const int WINDOW = (int)(WINDOW_SEC * rate);
     int i, count, previous;
     double peaki, spki, npki, threshold1;
 
@@ -150,7 +150,7 @@ int Thresholding(const double* integrated, int size, double rate, char* result)
                 result[i] = 1;
                 previous = i;
                 ++count;
-            } else if (i - previous >= MIN_RR) {
+            } else if (i - previous >= mir_rr_width) {
                 result[i] = 1;
                 previous = i;
                 ++count;
