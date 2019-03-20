@@ -6,12 +6,12 @@
 #define WINDOW_SEC (0.160)
 #define MIN_RR_SEC (0.200)
 
-static void FilterSignal(double const* signal, int size, double* output);
+static void FilterSignal(double const* signal, int size, double rate, double* output);
 static void ApplyArticleFilter(double const* signal, int size, double* output);
 static void ComputeDerivative(double const* signal, int size, double* output);
 static void ArrayPow2(double* signal, int size);
 static void WindowIntegration(double const* signal, int size, double* output, int window_size);
-static int Thresholding(const double* integrated, int size, double rate, char* result, int mir_rr_width);
+static int Thresholding(const double* integrated, int size, int mir_rr_width, char* result);
 static void Normalize(double* values, int size);
 
 int DetectQrsPeaks(double const* signal, int size, char* result, double rate)
@@ -24,7 +24,7 @@ int DetectQrsPeaks(double const* signal, int size, char* result, double rate)
 
     buffer = malloc(size * sizeof(double));
     FilterSignal(signal, size, rate, buffer);
-    Normalize(signal, size);
+    Normalize(buffer, size);
 
     derivative = malloc(size * sizeof(double));
     ComputeDerivative(buffer, size, derivative);
@@ -115,8 +115,7 @@ void ComputeDerivative(double const* signal, int size, double* output)
     for (i = 2; i < size - 2; ++i) {
         double value = (-signal[i - 2] - 2 * signal[i - 1] +
                         2 * signal[i + 1] + signal[i + 2]);
-        value /= 8.0;
-        output[i] = value * value;
+        output[i] = value / 8.0;
     }
     output[0] = output[1] = output[2];
     output[size - 3] = output[size - 2] = output[size - 1];
@@ -149,10 +148,10 @@ void WindowIntegration(double const* signal, int size, double* output, int windo
     }
 }
 
-int Thresholding(const double* integrated, int size, double rate, char* result, int mir_rr_width)
+int Thresholding(const double* integrated, int size, int mir_rr_width, char* result)
 {
     int i, count, previous;
-    double peaki, spki, npki, threshold1;
+    double spki, npki, threshold1;
 
     spki = npki = 0.0;
     count = 0;
@@ -183,6 +182,7 @@ int Thresholding(const double* integrated, int size, double rate, char* result, 
             } else if (integrated[previous] < peaki) {
                 result[previous] = 0;
                 result[i] = 1;
+                previous = i;
             }
         }
     }
