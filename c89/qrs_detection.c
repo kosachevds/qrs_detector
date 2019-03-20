@@ -173,16 +173,16 @@ int Thresholding(const double* integrated, int size, int mir_rr_width, char* res
 
         if (peaki > threshold1) {
             if (count == 0) {
-                result[i] = 1;
+                result[i] = MARK_QRS;
                 previous = i;
                 ++count;
             } else if (i - previous >= mir_rr_width) {
-                result[i] = 1;
+                result[i] = MARK_QRS;
                 previous = i;
                 ++count;
             } else if (integrated[previous] < peaki) {
-                result[previous] = 0;
-                result[i] = 1;
+                result[previous] = MARK_NO_QRS;
+                result[i] = MARK_QRS;
                 previous = i;
             }
         }
