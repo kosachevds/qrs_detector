@@ -2,7 +2,7 @@ from scipy import signal as scisig
 
 _WINDOW_SEC = 0.160
 _MIN_RR = 0.2  # compare with 0.33
-_PAPER_SIGNAL_RATE = 200.0
+_ARTICLE_SAMPLING_RATE = 200.0
 
 
 def detect(signal, rate):
@@ -59,7 +59,7 @@ def _high_pass_filter(signal):
 def _filter_signal(signal, rate):
     result = None
     delay = None
-    if rate == _PAPER_SIGNAL_RATE:
+    if rate == _ARTICLE_SAMPLING_RATE:
         # fix: this filters work only for 200 Hz sampling rate
         buffer = _low_pass_filter(signal)
         result = _high_pass_filter(buffer)

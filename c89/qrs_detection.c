@@ -14,7 +14,7 @@ static void WindowIntegration(double const* signal, int size, double* output, in
 static int Thresholding(const double* integrated, int size, double rate, char* result, int mir_rr_width);
 static void Normalize(double* values, int size);
 
-int DetectPeaks(double const* signal, int size, char* result, double rate)
+int DetectQrsPeaks(double const* signal, int size, char* result, double rate)
 {
     const int WINDOW_SIZE = (int)(WINDOW_SEC * rate);
     const int MIN_RR = (int)(MIN_RR_SEC * rate);
