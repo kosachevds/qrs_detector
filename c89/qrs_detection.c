@@ -35,7 +35,7 @@ int DetectQrsPeaks(double const* signal, int size, char* result, double rate)
     WindowIntegration(derivative, size, buffer, WINDOW_SIZE);
     free(derivative);
     memset(result, 0, size * sizeof(char));
-    count = Thresholding(buffer, size, rate, result, MIN_RR);
+    count = Thresholding(buffer, size, MIN_RR, result);
     free(buffer);
     // TODO: subtract filters delay
     SubtractDelay(result, size, WINDOW_SIZE / 2);
