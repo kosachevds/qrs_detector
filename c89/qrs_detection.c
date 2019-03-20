@@ -6,7 +6,8 @@
 #define MIN_RR_SEC (0.200)
 
 static void FilterData(double const* signal, int size, double* output);
-static void SquaredDerivative(double const* signal, int size, double* output);
+static void ComputeDerivative(double const* signal, int size, double* output);
+static void ArrayPow2(double* signal, int size);
 static void WindowIntegration(double const* signal, int size, double* output, int window_size);
 static int Thresholding(const double* integrated, int size, double rate, char* result);
 static void Normalize(double* values, int size);
@@ -15,14 +16,15 @@ int DetectPeaks(double const* signal, int size, char* result, double rate)
 {
     int count;
     double *buffer;  // filtered signal, integrated signal
-    double *squared_derivative;
+    double *derivative;
 
     buffer = malloc(size * sizeof(double));
     FilterData(signal, size, buffer);
-    squared_derivative = malloc(size * sizeof(double));
-    SquaredDerivative(buffer, size, squared_derivative);
-    WindowIntegration(squared_derivative, size, buffer, (int)(WINDOW_SEC * rate));
-    free(squared_derivative);
+    derivative = malloc(size * sizeof(double));
+    ComputeDerivative(buffer, size, derivative);
+    ArrayPow2(derivative, size);
+    WindowIntegration(derivative, size, buffer, (int)(WINDOW_SEC * rate));
+    free(derivative);
     memset(result, 0, size * sizeof(char));
     count = Thresholding(buffer, size, rate, result);
     free(buffer);
@@ -74,7 +76,7 @@ void FilterData(double const* signal, int size, double* output)
     free(buffer);
 }
 
-void SquaredDerivative(double const* signal, int size, double* output)
+void ComputeDerivative(double const* signal, int size, double* output)
 {
     int i;
 
@@ -86,6 +88,15 @@ void SquaredDerivative(double const* signal, int size, double* output)
     }
     output[0] = output[1] = output[2];
     output[size - 3] = output[size - 2] = output[size - 1];
+}
+
+void ArrayPow2(double* signal, int size)
+{
+    int i;
+
+    for (i = 0; i < size; ++i) {
+        signal[i] *= signal[i];
+    }
 }
 
 void WindowIntegration(double const* signal, int size, double* output, int window_size)
