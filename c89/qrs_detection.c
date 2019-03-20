@@ -1,8 +1,9 @@
-#include "new_r_detection.h"
+#include "qrs_detection.h"
 #include <stdlib.h>
 #include <string.h>
 
-#define WINDOW_SEC (0.150)
+#define WINDOW_SEC (0.160)
+#define MIN_RR_SEC (0.200)
 
 typedef struct
 {
@@ -16,7 +17,7 @@ typedef struct
 static void FilterData(double const* signal, int size, double* output);
 static void SquaredDerivative(double const* signal, int size, double* output);
 static void WindowIntegration(double const* signal, int size, double* output, int window_size);
-static int Thresholding(Detector const* data, char* result);
+static int Thresholding(const double* integrated, int size, double rate, char* result);
 
 int DetectPeaks(double const* signal, int size, char* result, double rate)
 {
@@ -32,7 +33,7 @@ int DetectPeaks(double const* signal, int size, char* result, double rate)
     WindowIntegration(buffer, size, data.integrated, (int)(WINDOW_SEC * rate));
     free(buffer);
     memset(result, 0, size * sizeof(char));
-    count = Thresholding(&data, result);
+    count = Thresholding(data.integrated, data.size, data.rate, result);
     free(data.integrated);
     free(data.filtered);
     return count;
@@ -115,40 +116,44 @@ void WindowIntegration(double const* signal, int size, double* output, int windo
     }
 }
 
-int Thresholding(Detector const* data, char* result)
+int Thresholding(const double* integrated, int size, double rate, char* result)
 {
-    const int MIN_RR = (int)(0.2 * data->rate);
-    const int WINDOW = (int)(WINDOW_SEC * data->rate);
-    int i, count, last_peak;
-    double peaki, spki, npki;
+    const int MIN_RR = (int)(MIN_RR_SEC * rate);
+    const int WINDOW = (int)(WINDOW_SEC * rate);
+    int i, count, previous;
+    double peaki, spki, npki, threshold1;
 
     spki = npki = 0.0;
-    peaki = data->integrated[0];
     count = 0;
-    last_peak = 0;
-    for (i = 1; i < data->size; ++i) {
-        double noise, threshold;
-        if (data->integrated[i] > peaki) {
-            peaki = data->integrated[i];
-        }
-
-        noise = data->signal[i] - data->filtered[i];
-        npki = (npki * (i - 1) + noise) / (double)i;
-        npki = 0.875 * npki + 0.125 * peaki;
-
-        spki = (spki * (i - 1) + data->integrated[i]) / (double)i;
-        spki = 0.875 * spki + 0.125 * peaki;
-
-        threshold = 0.5 * (npki + 0.25 * (spki - npki));
-        if (data->integrated[i] < threshold || i < WINDOW) {
+    threshold1 = 0.0;
+    previous = -1;
+    for (i = 1; i < size - 1; ++i) {
+        double peaki = integrated[i];
+        if (peaki < integrated[i - 1] || peaki <= integrated[i + 1]) {
             continue;
         }
-        if (last_peak > 0 && i - last_peak < MIN_RR) {
-            continue;
+
+        if (peaki <= threshold1) {
+            npki = 0.875 * npki + 0.125 * peaki;
+        } else {
+            spki = 0.875 * spki + 0.125 * peaki;
         }
-        ++count;
-        result[i] = 1;
-        last_peak = i;
+        threshold1 = npki + 0.25 * (spki - npki);
+
+        if (peaki > threshold1) {
+            if (count == 0) {
+                result[i] = 1;
+                previous = i;
+                ++count;
+            } else if (i - previous >= MIN_RR) {
+                result[i] = 1;
+                previous = i;
+                ++count;
+            } else if (integrated[previous] < peaki) {
+                result[previous] = 0;
+                result[i] = 1;
+            }
+        }
     }
     return count;
 }
