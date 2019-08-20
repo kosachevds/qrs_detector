@@ -134,19 +134,19 @@ void ArrayPow2(double* signal, int size)
 
 void WindowIntegration(double const* signal, int size, double* output, int window_size)
 {
-    int index;
+    int i;
+    double value = 0.0;
+    //double inv_window_size = 1.0 / window_size;
 
-    for (index = 0; index < size; ++index) {
-        int i;
-        double value = 0.0;
-
-        for (i = 0; i < window_size; ++i) {
-            if (index - i < 0) {
-                break;
-            }
-            value += signal[index - i];
+    for (i = 0; i < size; ++i) {
+        int first = i - (window_size - 1);
+        //value += signal[index] * inv_window_size;
+        value += signal[i] / window_size;
+        if (first > 0) {
+            //value -= signal[first - 1] * inv_window_size;
+            value -= signal[first - 1] / window_size;
         }
-        output[index] = value / (double)window_size;
+        output[i] = value;
     }
 }
 
