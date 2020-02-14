@@ -5,20 +5,25 @@
 
 #define WINDOW_SEC (0.160)
 #define MIN_RR_SEC (0.200)
+#define MAX_RR_SEC (2.0)
+#define USE_ARTICLE_FILTER (1)
 
 static void FilterSignal(double const* signal, int size, double rate, double* output);
 static void ApplyArticleFilter(double const* signal, int size, double* output);
 static void ComputeDerivative(double const* signal, int size, double* output);
 static void ArrayPow2(double* signal, int size);
 static void WindowIntegration(double const* signal, int size, double* output, int window_size);
-static int Thresholding(const double* integrated, int size, int mir_rr_width, char* result);
+static int Thresholding(const double* integrated, int size, int min_rr_width, int max_rr_width, char* result);
 static void Normalize(double* values, int size);
 static void SubtractDelay(char* qrs_detection_result, int size, int samples_delay);
+
+/*****************************************************************************/
 
 int DetectQrsPeaks(double const* signal, int size, char* result, double rate)
 {
     const int WINDOW_SIZE = (int)(WINDOW_SEC * rate);
     const int MIN_RR = (int)(MIN_RR_SEC * rate);
+    const int MAX_RR = (int)(MAX_RR_SEC * rate);
     int count;
     double *buffer;  // filtered signal, integrated signal
     double *derivative;
@@ -34,8 +39,7 @@ int DetectQrsPeaks(double const* signal, int size, char* result, double rate)
 
     WindowIntegration(derivative, size, buffer, WINDOW_SIZE);
     free(derivative);
-    memset(result, 0, size * sizeof(char));
-    count = Thresholding(buffer, size, MIN_RR, result);
+    count = Thresholding(buffer, size, MIN_RR, MAX_RR, result);
     free(buffer);
     // TODO: subtract filters delay
     SubtractDelay(result, size, WINDOW_SIZE / 2);
@@ -94,10 +98,12 @@ void FilterSignal(double const* signal, int size, double rate, double* output)
     const double UPPER_HZ = 15.0;
     Filter* filter;
 
+#ifdef USE_ARTICLE_FILTER
     if (rate == ARTICLE_SAMPLING_RATE) {
         ApplyArticleFilter(signal, size, output);
         return;
     }
+#endif // USE_ARTICLE_FILTER
 
     memcpy(output, signal, size * sizeof(double));
 
@@ -150,43 +156,61 @@ void WindowIntegration(double const* signal, int size, double* output, int windo
     }
 }
 
-int Thresholding(const double* integrated, int size, int mir_rr_width, char* result)
+int Thresholding(const double* integrated, int size, int min_rr_width, int max_rr_width, char* result)
 {
-    int i, count, previous;
-    double spki, npki, threshold1;
+    int i, count, previous, searchback, searchback_end;
+    double spki, npki, threshold1, threshold2;
 
     spki = npki = 0.0;
     count = 0;
     threshold1 = 0.0;
-    previous = -1;
-    for (i = 1; i < size - 1; ++i) {
-        double peaki = integrated[i];
-        if (peaki < integrated[i - 1] || peaki <= integrated[i + 1]) {
+    threshold2 = 0.0;
+    previous = 0;
+    searchback_end = 0;
+    searchback = 0;
+    memset(result, 0, size * sizeof(char));
+    for (i = 2; i < size - 2; ++i) {
+        int is_qrs;
+        double peaki;
+        if (i - previous > max_rr_width && i - searchback_end > max_rr_width) {
+            searchback = 1;
+            searchback_end = i;
+            i = previous + 1;
             continue;
         }
-
-        if (peaki <= threshold1) {
-            npki = 0.875 * npki + 0.125 * peaki;
-        } else {
-            spki = 0.875 * spki + 0.125 * peaki;
+        if (searchback && i == searchback_end) {
+            searchback = 0;
+            continue;
         }
-        threshold1 = npki + 0.25 * (spki - npki);
-
-        if (peaki > threshold1) {
-            if (count == 0) {
+        peaki = integrated[i];
+        if (peaki < integrated[i - 2] || peaki <= integrated[i + 2]) {
+            continue;
+        }
+        is_qrs = 0;
+        if (searchback) {
+            if (peaki > threshold2) {
+                spki = 0.750 * spki + 0.250 * peaki;
+                is_qrs = 1;
+            }
+        } else if (peaki > threshold1) {
+            spki = 0.875 * spki + 0.125 * peaki;
+            is_qrs = 1;
+        }
+        if (is_qrs) {
+            if (count == 0 || i - previous >= min_rr_width) {
                 result[i] = MARK_QRS;
-                previous = i;
-                ++count;
-            } else if (i - previous >= mir_rr_width) {
-                result[i] = MARK_QRS;
-                previous = i;
                 ++count;
             } else if (integrated[previous] < peaki) {
                 result[previous] = MARK_NO_QRS;
                 result[i] = MARK_QRS;
-                previous = i;
             }
+            previous = i;
+        } else {
+            npki = 0.875 * npki + 0.125 * peaki;
         }
+        threshold1 = npki + 0.25 * (spki - npki);
+        threshold2 = 0.5 * threshold1;
+        ++i;
     }
     return count;
 }
