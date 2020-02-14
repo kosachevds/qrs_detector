@@ -9,7 +9,7 @@ _INPUT_FILENAME = os.path.join(_DATA_DIR, "input_1209.txt")
 
 
 def main():
-    show_peaks(_INPUT_FILENAME, True, 20)
+    show_peaks(_INPUT_FILENAME)
 
 
 def show_peaks(filename, show_file_peaks=False, end_sec=None):
