@@ -1,56 +1,32 @@
 import os
 from matplotlib import pyplot as pp
 import detection
+import mysignal as sig
 
 _CURRENT_DIR = os.path.dirname(__file__)
 _DATA_DIR = os.path.join(_CURRENT_DIR, "..", "data")
-_BAD_DATA_FILENAME = "signalwithpeaks.txt"
-_SIGNAL_FILENAME = "input"
+_INPUT_FILENAME = os.path.join(_DATA_DIR, "input_1209.txt")
 
 
 def main():
-    # detect_and_show(_SIGNAL_FILENAME)
-    read_signal_with_peaks(_BAD_DATA_FILENAME)
+    show_peaks(_INPUT_FILENAME, True, 20)
 
 
-def detect_and_show(filename):
-    with open(os.path.join(_DATA_DIR, filename)) as in_file:
-        values = in_file.read().split()
-        input_signal = [float(x) for x in values]
-    result = detection.detect(input_signal, 2000)
-    plot_signal_with_peaks(input_signal, result)
+def show_peaks(filename, show_file_peaks=False, end_sec=None):
+    signal = sig.read(filename, end_sec=end_sec)
+    peaks = detection.detect(signal.values, signal.sampling_rate)
+    plot_signal_with_peaks(signal.values, peaks, "r")
+    if signal.peaks and show_file_peaks:
+        plot_vlines(signal.peaks, "g")
     pp.show()
 
 
-def read_signal_with_peaks(filename):
-    second_count = 0
-    sampling_rate = 2000
-    signal_size = int(second_count * sampling_rate)
-    with open(os.path.join(_DATA_DIR, filename)) as in_file:
-        lines = in_file.readlines()
-    signal = []
-    peaks = []
-    for index, line in enumerate(lines):
-        if signal_size and index >= signal_size:
-            break
-        if not line or line == '\n':
-            continue
-        value, is_peak = line.split()
-        signal.append(float(value))
-        is_peak = bool(int(is_peak))
-        if is_peak:
-            peaks.append(index)
-    my_peaks = detection.detect(signal, sampling_rate)
-
+def plot_signal_with_peaks(signal, peaks, peaks_color=None):
     pp.plot(signal)
-    plot_vlines(peaks, "g")
-    plot_vlines(my_peaks, "r")
-    pp.show()
-
-
-def plot_signal_with_peaks(signal, peaks):
-    pp.plot(signal)
-    plot_vlines(peaks)
+    if peaks_color is None:
+        plot_vlines(peaks)
+    else:
+        plot_vlines(peaks, peaks_color)
 
 
 def plot_vlines(x_list, color="r"):
