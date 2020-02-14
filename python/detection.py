@@ -2,6 +2,7 @@ from scipy import signal as scisig
 
 _WINDOW_SEC = 0.160
 _MIN_RR = 0.2  # compare with 0.33
+_MAX_RR = 2.0
 _ARTICLE_SAMPLING_RATE = 200.0
 
 
@@ -18,7 +19,8 @@ def detect(signal, rate):
     integrated = _window_integration(buffer, samples_window)
 
     min_rr_samples = round(_MIN_RR * rate)
-    indices, _ = _thresholding(integrated, min_rr_samples)
+    max_rr_samples = round(_MAX_RR * rate)
+    indices, _ = _thresholding(integrated, min_rr_samples, max_rr_samples)
     return [x - samples_delay for x in indices]
 
 
@@ -101,33 +103,51 @@ def _window_integration(signal, window_size):
     return result
 
 
-def _thresholding(integrated, min_rr_samples):
+def _thresholding(integrated, min_rr_width, max_rr_width):
     spki = 0
     npki = 0
     peaks = []
     threshold1 = spki
+    threshold2 = spki
     th1_list = []
-    i = 0
+    searchback = False
+    searchback_end = 0
+    previous = 0
+    i = 2
     while i < len(integrated) - 2:
-        i += 1
-        th1_list.append(threshold1)
+        # th1_list.append(threshold1)
+        if i - previous > max_rr_width and i - searchback_end > max_rr_width:
+            searchback = True
+            searchback_end = i
+            i = previous + 2
+            continue
+        if searchback and i == searchback_end:
+            searchback = False
+            continue
         peaki = integrated[i]
-        if peaki < integrated[i - 1] or peaki <= integrated[i + 1]:
+        if peaki < integrated[i - 2] or peaki <= integrated[i + 2]:
+            i += 1
             continue
 
-        if peaki <= threshold1:
-            npki = 0.875 * npki + 0.125 * peaki
-        else:
+        is_qrs = False
+        if searchback:
+            if peaki > threshold2:
+                spki = 0.750 * spki + 0.250 * peaki
+                is_qrs = True
+        elif peaki > threshold1:
             spki = 0.875 * spki + 0.125 * peaki
+            is_qrs = True
+
+        if is_qrs:
+            if previous == 0 or i - previous >= min_rr_width:
+                peaks.append(i)
+            elif integrated[previous] < peaki:
+                peaks[-1] = i
+            previous = i
+        else:
+            npki = 0.875 * npki + 0.125 * peaki
 
         threshold1 = npki + 0.25 * (spki - npki)
-        # threshold2 = 0.5 * threshold1
-
-        if peaki > threshold1:
-            if not peaks:
-                peaks.append(i)
-            elif i - peaks[-1] >= min_rr_samples:
-                peaks.append(i)
-            elif integrated[peaks[-1]] < peaki:
-                peaks[-1] = i
+        threshold2 = 0.5 * threshold1
+        i += 1
     return peaks, th1_list
