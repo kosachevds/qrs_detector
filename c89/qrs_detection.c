@@ -7,9 +7,12 @@
 #define MIN_RR_SEC (0.200)
 #define MAX_RR_SEC (2.0)
 #define USE_ARTICLE_FILTER (1)
+#define LOWER_HZ (5.0)
+#define UPPER_HZ (11.0)
+#define SUM_FILTER_DELAY_SEC (0.06)
 
-static void FilterSignal(double const* signal, int size, double rate, double* output);
-static void ApplyArticleFilter(double const* signal, int size, double* output);
+static int FilterSignal(double const* signal, int size, double rate, double* output);
+static int ApplyArticleFilter(double const* signal, int size, double* output);
 static void ComputeDerivative(double const* signal, int size, double* output);
 static void ArrayPow2(double* signal, int size);
 static void WindowIntegration(double const* signal, int size, double* output, int window_size);
@@ -24,12 +27,12 @@ int DetectQrsPeaks(double const* signal, int size, char* result, double rate)
     const int WINDOW_SIZE = (int)(WINDOW_SEC * rate);
     const int MIN_RR = (int)(MIN_RR_SEC * rate);
     const int MAX_RR = (int)(MAX_RR_SEC * rate);
-    int count;
+    int count, delay;
     double *buffer;  // filtered signal, integrated signal
     double *derivative;
 
     buffer = malloc(size * sizeof(double));
-    FilterSignal(signal, size, rate, buffer);
+    delay = FilterSignal(signal, size, rate, buffer);
     Normalize(buffer, size);
 
     derivative = malloc(size * sizeof(double));
@@ -38,24 +41,24 @@ int DetectQrsPeaks(double const* signal, int size, char* result, double rate)
     ArrayPow2(derivative, size);
 
     WindowIntegration(derivative, size, buffer, WINDOW_SIZE);
+    delay += WINDOW_SIZE / 2;
     free(derivative);
     count = Thresholding(buffer, size, MIN_RR, MAX_RR, result);
     free(buffer);
-    // TODO: subtract filters delay
-    SubtractDelay(result, size, WINDOW_SIZE / 2);
+    SubtractDelay(result, size, delay);
     return count;
 }
 
 /*****************************************************************************/
 
-void ApplyArticleFilter(double const* signal, int size, double* output)
+int ApplyArticleFilter(double const* signal, int size, double* output)
 {
     int index;
     double* buffer;
 
     buffer = malloc(size * sizeof(double));
 
-    /* Low Pass Filter */
+    /* Low Pass Filter ~ 11 Hz */
     for (index = 0; index < size; ++index) {
         double value = signal[index];
         if (index >= 1) {
@@ -73,7 +76,7 @@ void ApplyArticleFilter(double const* signal, int size, double* output)
         buffer[index] = value;
     }
 
-    /* High Pass Filter */
+    /* High Pass Filter ~ 5 Hz */
     for (index = 0; index < size; ++index) {
         double value = -buffer[index];
         if (index >= 1) {
@@ -89,19 +92,17 @@ void ApplyArticleFilter(double const* signal, int size, double* output)
     }
 
     free(buffer);
+    return 6 + 16;
 }
 
-void FilterSignal(double const* signal, int size, double rate, double* output)
+int FilterSignal(double const* signal, int size, double rate, double* output)
 {
     const double ARTICLE_SAMPLING_RATE = 200.0;
-    const double LOWER_HZ = 5.0;
-    const double UPPER_HZ = 15.0;
     Filter* filter;
 
 #ifdef USE_ARTICLE_FILTER
     if (rate == ARTICLE_SAMPLING_RATE) {
-        ApplyArticleFilter(signal, size, output);
-        return;
+        return ApplyArticleFilter(signal, size, output);
     }
 #endif // USE_ARTICLE_FILTER
 
@@ -114,6 +115,7 @@ void FilterSignal(double const* signal, int size, double rate, double* output)
     filter = InitFilter(LOWER_HZ, rate, FT_HIGH_PASS);
     FilterData(filter, output, size);
     CloseFilter(&filter);
+    return (int)round(SUM_FILTER_DELAY_SEC * rate);
 }
 
 void ComputeDerivative(double const* signal, int size, double* output)
