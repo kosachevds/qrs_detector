@@ -128,7 +128,7 @@ void ComputeDerivative(double const* signal, int size, double* output)
         output[i] = value / 8.0;
     }
     output[0] = output[1] = output[2];
-    output[size - 3] = output[size - 2] = output[size - 1];
+    output[size - 1] = output[size - 2] = output[size - 3];
 }
 
 void ArrayPow2(double* signal, int size)
