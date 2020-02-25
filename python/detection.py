@@ -4,6 +4,8 @@ _WINDOW_SEC = 0.160
 _MIN_RR = 0.2  # compare with 0.33
 _MAX_RR = 2.0
 _ARTICLE_SAMPLING_RATE = 200.0
+_LOWER_FILTER_HZ = 5.0
+_UPPER_FILTER_HZ = 11.0
 
 
 def detect(signal, rate):
@@ -69,9 +71,11 @@ def _filter_signal(signal, rate):
         delay = 6 + 16
     else:
         nyq = 0.5 * rate
-        lower = 5 / nyq
-        upper = 15 / nyq
-        b, a = scisig.butter(2, [lower, upper], btype="band")
+        lower = _LOWER_FILTER_HZ / nyq
+        upper = _UPPER_FILTER_HZ / nyq
+        b, a = scisig.butter(2, upper, btype="low")
+        result = scisig.filtfilt(b, a, signal)
+        b, a = scisig.butter(2, lower, btype="high")
         result = scisig.filtfilt(b, a, signal)
         delay = int(0.06 * rate)
     return result, delay
