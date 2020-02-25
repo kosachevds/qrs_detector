@@ -62,7 +62,6 @@ def _filter_signal(signal, rate):
     result = None
     delay = None
     if rate == _ARTICLE_SAMPLING_RATE:
-        # fix: this filters work only for 200 Hz sampling rate
         buffer = _low_pass_filter(signal)
         result = _high_pass_filter(buffer)
         # In the paper delay is 6 samples for LPF and 16 samples for HPF
@@ -74,7 +73,7 @@ def _filter_signal(signal, rate):
         upper = 15 / nyq
         b, a = scisig.butter(2, [lower, upper], btype="band")
         result = scisig.filtfilt(b, a, signal)
-        delay = 0
+        delay = int(0.06 * rate)
     return result, delay
 
 
