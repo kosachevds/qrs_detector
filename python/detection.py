@@ -1,4 +1,6 @@
+import math
 from scipy import signal as scisig
+
 
 _WINDOW_SEC = 0.160
 _MIN_RR = 0.2  # compare with 0.33
@@ -151,4 +153,26 @@ def _thresholding(integrated, min_rr_width, max_rr_width):
         threshold1 = npki + 0.25 * (spki - npki)
         threshold2 = 0.5 * threshold1
         i += 1
+    return peaks
+
+
+def _correct_peaks(signal, rate, peaks):
+    left_add = int(0.075 * rate)
+    right_add = int(0.075 * rate)
+    i = 0
+    while i < len(peaks):
+        old_index = peaks[i]
+        begin = max(old_index - left_add, 1)
+        end = min(old_index + right_add, len(signal) - 1)
+        baseline = (signal[begin] + signal[end]) / 2
+        max_value = math.fabs(signal[old_index] - baseline)
+        new_index = old_index
+        for j in range(begin, end):
+            value = math.fabs(signal[j] - baseline)
+            if value > max_value:
+                value = max_value
+                new_index = j
+        if new_index != old_index:
+            peaks[i] = new_index
+            i = end
     return peaks
