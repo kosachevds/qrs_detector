@@ -22,7 +22,7 @@ def detect(signal, rate):
 
     min_rr_samples = round(_MIN_RR * rate)
     max_rr_samples = round(_MAX_RR * rate)
-    indices, _ = _thresholding(integrated, min_rr_samples, max_rr_samples)
+    indices = _thresholding(integrated, min_rr_samples, max_rr_samples)
     return [x - samples_delay for x in indices]
 
 
@@ -112,13 +112,11 @@ def _thresholding(integrated, min_rr_width, max_rr_width):
     peaks = []
     threshold1 = spki
     threshold2 = spki
-    th1_list = []
     searchback = False
     searchback_end = 0
     previous = 0
     i = 2
     while i < len(integrated) - 2:
-        # th1_list.append(threshold1)
         if i - previous > max_rr_width and i - searchback_end > max_rr_width:
             searchback = True
             searchback_end = i
@@ -153,4 +151,4 @@ def _thresholding(integrated, min_rr_width, max_rr_width):
         threshold1 = npki + 0.25 * (spki - npki)
         threshold2 = 0.5 * threshold1
         i += 1
-    return peaks, th1_list
+    return peaks
