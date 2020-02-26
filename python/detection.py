@@ -19,13 +19,14 @@ def detect(signal, rate):
     buffer = [x * x for x in buffer]
 
     samples_window = round(_WINDOW_SEC * rate)
-    samples_delay += samples_window / 2
     integrated = _window_integration(buffer, samples_window)
+    samples_delay += samples_window // 2
 
     min_rr_samples = round(_MIN_RR * rate)
     max_rr_samples = round(_MAX_RR * rate)
     indices = _thresholding(integrated, min_rr_samples, max_rr_samples)
-    return [x - samples_delay for x in indices]
+    indices = [x - samples_delay for x in indices]
+    return _correct_peaks(signal, rate, indices)
 
 
 def _normalize(values, required_max=1.0):
@@ -160,6 +161,7 @@ def _correct_peaks(signal, rate, peaks):
     left_add = int(0.075 * rate)
     right_add = int(0.075 * rate)
     i = 0
+    # TODO: debug
     while i < len(peaks):
         old_index = peaks[i]
         begin = max(old_index - left_add, 1)
@@ -170,9 +172,9 @@ def _correct_peaks(signal, rate, peaks):
         for j in range(begin, end):
             value = math.fabs(signal[j] - baseline)
             if value > max_value:
-                value = max_value
+                max_value = value
                 new_index = j
         if new_index != old_index:
             peaks[i] = new_index
-            i = end
+        i += 1
     return peaks
